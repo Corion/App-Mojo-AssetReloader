@@ -96,7 +96,7 @@ $config = restructure_config( $config );
 # Restructure config from the INI file into our default actions
 sub restructure_config( $config ) {
     $config->{watch} ||= ['.'];
-    unshift @{ $config->{watch}}, $config_file
+    push @{ $config->{watch}}, $config_file
         if ($config_file and -f $config_file);
 
     # Convert from hash to array if necessary
