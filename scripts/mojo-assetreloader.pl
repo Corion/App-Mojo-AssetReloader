@@ -11,16 +11,68 @@ use Helper::File::ChangeNotify::Threaded;
 use Filter::signatures;
 use feature 'signatures';
 no warnings 'experimental::signatures';
-GetOptions();
+GetOptions(
+    'config|f=s' => \my $config_file,
+);
 
-#my ($serve) = @ARGV;
-my( $command, @watch ) = @ARGV;
-if( ! @watch ) {
-    @watch = '.';
+sub maybe_exists( $f ) {
+    return $f
+        if( $f and -f $f );
+}
+
+if( !$config_file ) {
+    no warnings 'uninitialized';
+    my $config_name = '.assetreloader';
+    ($config_file) = grep { defined $_ }
+                     map { maybe_exists "$_/$config_name" }
+                     ('.', $ENV{HOME});
+    $config_file ||= maybe_exists '/etc/assetreloader.conf';
 };
-@watch = map {
-    Mojo::File->new( $_ )->to_abs(getcwd())
-} @watch;
+
+if( $config_file and -f $config_file ) {
+    # Read the config
+    app->plugin('INIConfig' => { file => $config_file });
+};
+
+my $config = app->config;
+
+my $default_config = {
+    actions => [
+        { name => 'HTML',  filename => qr/\.html$/,        type => 'reload' },
+        { name => 'CSS',   filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
+        { name => 'image', filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
+        { name => 'JS',    filename => qr/\.js$/,          type => 'eval', },
+    ]
+};
+
+# Overwrite directories in the config that were specified on the command line
+my( $command, @watch ) = @ARGV;
+
+if( @watch ) {
+    $config->{watch} = \@watch;
+};
+
+$config->{watch} ||= ['.'];
+
+# Convert from hash to array if necessary
+if( 'HASH' eq ref $config->{watch}) {
+    $config->{watch} = [ sort keys %{ $config->watch } ];
+};
+
+# Restructure config from the INI file into our default actions
+$config->{actions} ||= $default_config->{actions};
+if( ! $config->{actions} ) {
+    for my $section ( grep { $_ ne 'watch' } keys %$config ) {
+        my $user_specified = $config->{$section};
+        $user_specified->{name} = $section;
+        unshift @{ $config->{actions}}, $user_specified;
+    };
+};
+
+my $cwd = getcwd();
+@{ $config->{watch} } = map {
+    Mojo::File->new( $_ )->to_abs($cwd)
+} @{ $config->{watch} };
 
 # Inject a live reload, keep all logic on the server
 my $inject = <<'HTML';
@@ -137,13 +189,6 @@ app->log->info("Watching things below $_")
     for @watch;
 unshift @{ app->static->paths }, @watch;
 
-my $config = [
-    { filename => qr/\.html$/,        type => 'reload' },
-    { filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
-    { filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
-    { filename => qr/\.js$/,          type => 'eval', },
-];
-
 sub notify_changed( @files ) {
     my $dir = $watch[0]; # let's hope we only have one source for files for the moment
 
@@ -155,7 +200,8 @@ sub notify_changed( @files ) {
 
         # Go through all potential actions, first one wins
         my $found;
-        for my $candidate (@$config) {
+        my $config = app->config;
+        for my $candidate (@{ $config->{actions} }) {
             if( $f =~ /$candidate->{filename}/i ) {
                 my $action = { path => $rel, %$candidate };
 
@@ -178,7 +224,7 @@ sub notify_changed( @files ) {
             # Convert path to what the client will likely have requested (duh)
 
             # These rules should all come from a config file, I guess
-            app->log->warn("Notifying client $client_id of '$action->{type}' change to '$action->{path}'");
+            app->log->warn("Notifying client $client_id of '$action->{name}' change to '$action->{path}'");
             $client->send({json => $action });
         };
     };
@@ -192,6 +238,32 @@ my $reload = Mojo::IOLoop->recurring(1, sub {
 });
 
 app->start;
+
+=head1 CONFIG
+
+    [watch]
+    dir1=.
+    dir2=
+    
+    [HTML]
+    filename=.html$
+    type=reload
+    
+    [CSS]
+    filename=\.css$
+    type=refetch
+    attr=href
+    selector=link[rel="stylesheet"]
+    
+    [image]
+    filename=\.(png|jpe?g)$
+    type=refetch
+    attr=src
+    selector=img[src]
+    
+    [JS]
+    filename=\.js$
+    type=eval
 
 =head1 SEE ALSO
 
