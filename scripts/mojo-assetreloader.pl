@@ -24,29 +24,7 @@ GetOptions(
 
 =cut
 
-);
-
-sub maybe_exists( $f ) {
-    return $f
-        if( $f and -f $f );
-}
-
-if( !$config_file ) {
-    no warnings 'uninitialized';
-    my $config_name = '.assetreloader';
-    ($config_file) = grep { defined $_ }
-                     map { maybe_exists "$_/$config_name" }
-                     ('.', $ENV{HOME});
-    $config_file ||= maybe_exists '/etc/assetreloader.conf';
-};
-
-if( $config_file and -f $config_file ) {
-    # Read the config
-    app->plugin('INIConfig' => { file => $config_file });
-};
-
-my $config = app->config;
-
+my( $command, @watch ) = @ARGV;
 my $default_config = {
     actions => [
         { name => 'HTML',  filename => qr/\.html$/,        type => 'reload' },
@@ -56,34 +34,63 @@ my $default_config = {
     ]
 };
 
+sub maybe_exists( $f ) {
+    return $f
+        if( $f and -f $f );
+    return "$f.ini"
+        if( $f and -f "$f.ini" );
+}
+
+if( !$config_file ) {
+    my $config_name = '.assetreloader';
+    ($config_file) = grep { defined $_ }
+                     map { maybe_exists "$_/$config_name" }
+                     grep { defined $_ && length $_ }
+                     (@watch, '.', $ENV{HOME});
+    $config_file ||= maybe_exists '/etc/assetreloader';
+};
+
+if( $config_file and -f $config_file ) {
+    # Read the config
+    $config_file = Mojo::File->new( $config_file )->to_abs;
+    app->plugin('INIConfig' => { file => $config_file });
+    app->log->info("Loading config file '$config_file'");
+};
+
+my $config = app->config;
+
 # Overwrite directories in the config that were specified on the command line
-my( $command, @watch ) = @ARGV;
 
 if( @watch ) {
     $config->{watch} = \@watch;
 };
 
-$config->{watch} ||= ['.'];
-
-# Convert from hash to array if necessary
-if( 'HASH' eq ref $config->{watch}) {
-    $config->{watch} = [ sort keys %{ $config->watch } ];
-};
+$config = restructure_config( $config );
 
 # Restructure config from the INI file into our default actions
-$config->{actions} ||= $default_config->{actions};
-if( ! $config->{actions} ) {
-    for my $section ( grep { $_ ne 'watch' } keys %$config ) {
+sub restructure_config( $config ) {
+    $config->{watch} ||= ['.'];
+    unshift @{ $config->{watch}}, $config_file
+        if ($config_file and -f $config_file);
+
+    # Convert from hash to array if necessary
+    if( 'HASH' eq ref $config->{watch}) {
+        $config->{watch} = [ sort keys %{ $config->watch } ];
+    };
+
+    my $cwd = getcwd();
+    @{ $config->{watch} } = map {
+        Mojo::File->new( $_ )->to_abs($cwd)
+    } @{ $config->{watch} };
+
+    $config->{actions} ||= $default_config->{actions};
+    for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
         my $user_specified = $config->{$section};
         $user_specified->{name} = $section;
         unshift @{ $config->{actions}}, $user_specified;
     };
+    return $config
 };
-
-my $cwd = getcwd();
-@{ $config->{watch} } = map {
-    Mojo::File->new( $_ )->to_abs($cwd)
-} @{ $config->{watch} };
 
 # Inject a live reload, keep all logic on the server
 my $inject = <<'HTML';
