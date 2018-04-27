@@ -135,7 +135,6 @@ sub notify_changed( @files ) {
 Helper::File::ChangeNotify::Threaded::watch_files( @watch );
 my $reload = Mojo::IOLoop->recurring(1, sub {
     my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
-    #warn "Checking";
     app->log->debug("$_ changed") for @changed;
     notify_changed(@changed) if @changed;
 });
