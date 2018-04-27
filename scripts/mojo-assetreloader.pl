@@ -128,32 +128,33 @@ function _ws_reopen() {
         ping: null,
         was_connected: null,
         _ws: null,
+        reconnect: () => {
+            if( me.ping ) {
+                clearInterval( me.ping );
+                me.ping = null;
+            };
+            me._ws = null;
+            if(!me.retry) {
+                me.retry = setTimeout( () => { try { me.open(); } catch( e ) { console.log("Whoa" )} }, 5000 );
+            };
+        },
         open: () => {
+            me.retry = null;
             me._ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
-            me._ws.onerror = (e) => {
-                if( me.ping ) {
-                    //console.log("Ping stopped",e);
-                    clearInterval( me.ping );
-                    me.ping = null;
-                    };
-                if(me.was_connected && !me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
-            };
-            me._ws.onclose = (e) => {
-                if( me.ping ) {
-                    //console.log("Ping stopped",e);
-                    clearInterval( me.ping );
-                    me.ping = null;
-                    };
-                if(me.was_connected && !me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
-            };
-            me._ws.onopen = () => {
-                //console.log("(Re)connected");
-                clearInterval(me.retry)
-                me.retry = null;
+            me._ws.addEventListener('close', (e) => {
+                me.reconnect();
+            });
+            me._ws.addEventListener('error', (e) => {
+                me.reconnect();
+            });
+            me._ws.addEventListener('open', () => {
+                if( me.retry ) {
+                    clearInterval(me.retry)
+                    me.retry = null;
+                };
                 me.was_connected = true;
                 if( !me.ping) {
                     me.ping = setInterval( () => {
-                      //console.log("pinging");
                       try {
                           me._ws.send( "ping" )
                       } catch( e ) {
@@ -162,8 +163,8 @@ function _ws_reopen() {
                       };
                     }, 5000 );
                 };
-            };
-            me._ws.onmessage = msg => {
+            });
+            me._ws.addEventListener('message', (msg) => {
             try {
               var {path, type, selector, attr, str} = JSON.parse(msg.data)
               } catch(e) { console.log(e) };
@@ -186,7 +187,7 @@ function _ws_reopen() {
                     console.log(e);
                   };
               }
-            };
+            });
         },
     };
     me.open();
