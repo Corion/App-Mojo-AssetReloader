@@ -10,13 +10,13 @@ Written using [Mojolicious](http://mojolicious.org)
 
 # Installation
 
-  git clone https://github.com/Corion/App-Mojo-AssetReloader
-  cd App-Mojo-AssetReloader
-  cpan .
+    git clone https://github.com/Corion/App-Mojo-AssetReloader
+    cd App-Mojo-AssetReloader
+    cpan .
 
 # Usage
 
-  mojo-assetreloader.pl daemon demo/
+    mojo-assetreloader.pl daemon demo/
 
 Then visit [http://localhost:3000] or whatever other URL the console output
 displays.
