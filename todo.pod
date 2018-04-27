@@ -8,3 +8,4 @@
   [ ] Index/list
   [ ] Single post page
 * Show off live editing/hot reloading of static assets
+* Demo of two differently sized browser windows side-by-side
