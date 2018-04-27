@@ -85,14 +85,31 @@ my $inject = <<'HTML';
 <!-- hot-server appends this snippit to inject code via a websock  -->
 <script>
 new WebSocket(location.origin.replace(/^http/, 'ws')).onmessage = msg => {
-console.log(msg.data);
+// console.log(msg.data);
   var {path, type, str} = JSON.parse(msg.data)
   if (type == 'reload') location.reload()
   if (type == 'jsInject') eval(str)
   if (type == 'cssInject') {
+  /*
     Array.from(document.querySelectorAll('link'))
       .filter(d => d.href.includes(path))
-      .forEach(d => d.href = d.href)
+      .forEach(function(d) {console.log(d.href)});
+      */
+    try {
+    Array.from(document.querySelectorAll('link'))
+      .filter(d => d.href.includes(path))
+      .forEach(function( d ) {
+          try {
+          const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
+          d.href = d.href.replace(/\?.*|$/, cacheBuster);
+          console.log(d.href);
+          } catch( e ) {
+              console.log(e);
+          };
+      });
+      } catch( e ) {
+        console.log(e);
+      };
   }
 }
 </script>
@@ -102,20 +119,20 @@ hook 'after_static' => sub( $c ) {
     # serve everything as static
     app->log->debug(sprintf "Serving static file '%s' (%s)", $c->req->url, $c->res->headers->content_type);
     return if $c->res->headers->content_type !~ m!^text/html\b!i;
-    
+
     app->log->debug(sprintf "Rewriting HTML for '%s'", $c->req->url);
-    
+
     # rewrite HTML to append/add our <script> tag to the end
     my $res = $c->res->content->asset->slurp;
     $res =~ s!</body>!$inject</body>!i;
-    
+
     my $r = Mojo::Asset::Memory->new();
     $r->add_chunk( $res );
-    
+
     # should we maybe remember an expected reconnect to our websocket here?!
     # Also, before reloading, should we syntax-check things?!
     $c->res->content->asset( $r );
-    
+
     $res
 };
 
