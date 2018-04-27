@@ -1,6 +1,6 @@
 # Mojo Asset Live Reloader
 
-![Demo movie of live reloading](https://github.com/Corion/app-mojo-assetreloader/raw/master/demo/hero-demo.mp4)
+![Demo movie of live reloading](https://github.com/Corion/App-Mojo-AssetReloader/raw/master/demo/hero-demo.mp4)
 
 Written using [Mojolicious](http://mojolicious.org)
 
