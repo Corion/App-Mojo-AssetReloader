@@ -27,6 +27,8 @@ the console output displays.
 * [ ] Move hot-reloaded Javascript to a separate file
 * [ ] Allow specifying your own Javascript to include
 * [ ] Add `system` action to configuration to (re)launch `make` or `jekyll`
+* [ ] Pass a "server launched at" timestamp to the client so the client knows
+      when it needs a full resync if the server restarts
 
 # Done
 
