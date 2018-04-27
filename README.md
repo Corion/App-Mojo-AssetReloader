@@ -29,6 +29,7 @@ the console output displays.
 * [ ] Add `system` action to configuration to (re)launch `make` or `jekyll`
 * [ ] Pass a "server launched at" timestamp to the client so the client knows
       when it needs a full resync if the server restarts
+      ... or simply reload the HTML on reconnection?!
 
 # Done
 
