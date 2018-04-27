@@ -26,7 +26,6 @@ the console output displays.
 * [ ] Demo of two differently sized browser windows side-by-side
 * [ ] Move hot-reloaded Javascript to a separate file
 * [ ] Allow specifying your own Javascript to include
-* [ ] Add `system` action to configuration to (re)launch `make` or `jekyll`
 * [ ] Pass a "server launched at" timestamp to the client so the client knows
       when it needs a full resync if the server restarts
       ... or simply reload the HTML on reconnection?!
@@ -34,3 +33,4 @@ the console output displays.
 # Done
 
 * [x] Read methods from a config file
+* [x] Add `system` action to configuration to (re)launch `make` or `jekyll`
