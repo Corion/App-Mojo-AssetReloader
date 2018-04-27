@@ -174,6 +174,8 @@ sub notify_changed( @files ) {
                 $client->send({json => { path => $rel, type => 'cssInject', str => '' }});
             } elsif( $f =~ /\.js/i ) {
                 app->log->warn("Notifying client $client_id of JS change to $rel");
+                # We should check whether the Javascript passes a syntax check
+                # before reloading it, maybe
                 my $content = Mojo::File->new( $f );
                 $client->send({json => { path => $rel, type => 'eval', str => $content->slurp }});
 
