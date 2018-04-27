@@ -149,3 +149,13 @@ my $reload = Mojo::IOLoop->recurring(1, sub {
 });
 
 app->start;
+
+=head1 SEE ALSO
+
+L<Mojolicious::Plugin::AutoReload> - this is a Mojolicious plugin already,
+which this program is not (yet). It has more controlled JS injection and
+less complex Javascript. It can reload generated HTML instead of just static
+assets. On the downside, it can't reload changed images or CSS
+without reloading the HTML page.
+
+=cut
