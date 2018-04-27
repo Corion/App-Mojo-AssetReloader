@@ -159,21 +159,29 @@ my @watch = glob "$dir/*";
 #warn "[[@watch]]";
 
 sub notify_changed( @files ) {
-    for my $client (values %pages) {
-        app->log->warn("Notifying client of @files");
+    for my $client_id (sort keys %pages) {
+        my $client = $pages{ $client_id };
         for my $f (@files) {
             # Convert path to what the client will likely have requested (duh)
             my $rel = Mojo::File->new($f);
             $rel = $rel->to_rel( $dir );
             $rel =~ s!\\!/!g;
             if( $f =~ /\.html$/i ) {
+                app->log->warn("Notifying client $client_id HTML change to $rel");
                 $client->send({json => { path => $rel, type => 'reload', str => '' }});
             } elsif( $f =~ /\.css/i ) {
+                app->log->warn("Notifying client $client_id of CSS change to $rel");
                 $client->send({json => { path => $rel, type => 'cssInject', str => '' }});
             } elsif( $f =~ /\.js/i ) {
+                app->log->warn("Notifying client $client_id of JS change to $rel");
                 my $content = Mojo::File->new( $f );
                 $client->send({json => { path => $rel, type => 'eval', str => $content->slurp }});
-            };
+
+            # We should replace images by doing the same trick as cssInject, except
+            # for images
+            } else {
+                app->log->warn("Ignoring change to $rel");
+            }
         };
     };
 }
