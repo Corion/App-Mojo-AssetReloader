@@ -23,7 +23,11 @@ the console output displays.
 
 # To be implemented
 
-* [ ] Read methods from a config file
 * [ ] Demo of two differently sized browser windows side-by-side
 * [ ] Move hot-reloaded Javascript to a separate file
 * [ ] Allow specifying your own Javascript to include
+* [ ] Add `system` action to configuration to (re)launch `make` or `jekyll`
+
+# Done
+
+* [x] Read methods from a config file
