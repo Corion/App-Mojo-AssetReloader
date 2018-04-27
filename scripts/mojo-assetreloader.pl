@@ -19,10 +19,7 @@ if( ! @watch ) {
     @watch = '.';
 };
 @watch = map {
-warn $_;
-    my $r = Mojo::File->new( $_ )->to_abs(getcwd());
-    warn $r;
-    $r
+    Mojo::File->new( $_ )->to_abs(getcwd())
 } @watch;
 
 # Inject a live reload, keep all logic on the server
