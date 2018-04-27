@@ -1,13 +1,17 @@
 package 
     Helper::File::ChangeNotify::Threaded;
 use strict;
+our $VERSION = '0.01';
 our $enabled;
 BEGIN {
-    my $ok = eval { require threads; 1 };
+    my $ok = eval {
+        require threads;
+        require Thread::Queue;
+        1
+    };
     my $err = $@;
     $enabled = $ok;
 }
-use Thread::Queue;
 use Filesys::Notify::Simple;
 use File::Basename 'dirname';
 use File::Spec;

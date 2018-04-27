@@ -1,0 +1,14 @@
+
+[![Build Status](https://travis-ci.org/Corion/WWW-Mechanize-Chrome.svg?branch=master)](https://github.com/Corion/WWW-Mechanize-Chrome)
+
+# NAME
+
+App::Mojo::AssetReloader - automatically reload static assets
+
+# SEE ALSO
+
+[Mojolicious::Plugin::AutoReload](https://metacpan.org/pod/Mojolicious::Plugin::AutoReload) - this is a Mojolicious plugin already,
+which this program is not (yet). It has more controlled JS injection and
+less complex Javascript. It can reload generated HTML instead of just static
+assets. On the downside, it can't reload changed images or CSS
+without reloading the HTML page.
