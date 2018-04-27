@@ -27,7 +27,7 @@ my $inject = <<'HTML';
 <!-- hot-server appends this snippit to inject code via a websock  -->
 <script>
 function _ws_reopen() {
-    console.log("Retrying connection");
+    //console.log("Retrying connection");
     var me = {
         retry: null,
         ping: null,
@@ -36,7 +36,7 @@ function _ws_reopen() {
             me._ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
             me._ws.onerror = (e) => {
                 if( me.ping ) {
-                    console.log("Ping stopped",e);
+                    //console.log("Ping stopped",e);
                     clearInterval( me.ping );
                     me.ping = null;
                     };
@@ -44,23 +44,23 @@ function _ws_reopen() {
             };
             me._ws.onclose = (e) => {
                 if( me.ping ) {
-                    console.log("Ping stopped",e);
+                    //console.log("Ping stopped",e);
                     clearInterval( me.ping );
                     me.ping = null;
                     };
                 if(!me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
             };
             me._ws.onopen = () => {
-                console.log("(Re)connected");
+                //console.log("(Re)connected");
                 clearInterval(me.retry)
                 me.retry = null;
                 if( !me.ping) {
                     me.ping = setInterval( () => {
-                      console.log("pinging");
+                      //console.log("pinging");
                       try {
                           me._ws.send( "ping" )
                       } catch( e ) {
-                          console.log("Lost connection", e);
+                          //console.log("Lost connection", e);
                           me._ws.onerror(e);
                       };
                     }, 5000 );
