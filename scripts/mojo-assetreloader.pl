@@ -175,12 +175,13 @@ hook 'after_static' => sub( $c ) {
 our %pages;
 our $id = 0;
 websocket sub($c) {
-    $pages{ $id++ } = $c->tx;
+    my $client_id = $id++;
+    $pages{ $client_id } = $c->tx;
     $c->inactivity_timeout(60);
-    app->log->warn("Client $id connected");
+    app->log->warn("Client $client_id connected");
     $c->on(finish => sub( $c, @rest ) {
-        app->log->warn("Client $id disconnected");
-        delete $pages{ $id };
+        app->log->warn("Client $client_id disconnected");
+        delete $pages{ $client_id };
     });
 };
 
