@@ -94,6 +94,7 @@ function _ws_reopen() {
     var me = {
         retry: null,
         ping: null,
+        was_connected: null,
         _ws: null,
         open: () => {
             me._ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
@@ -103,7 +104,7 @@ function _ws_reopen() {
                     clearInterval( me.ping );
                     me.ping = null;
                     };
-                if(!me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
+                if(me.was_connected && !me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
             };
             me._ws.onclose = (e) => {
                 if( me.ping ) {
@@ -111,12 +112,13 @@ function _ws_reopen() {
                     clearInterval( me.ping );
                     me.ping = null;
                     };
-                if(!me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
+                if(me.was_connected && !me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
             };
             me._ws.onopen = () => {
                 //console.log("(Re)connected");
                 clearInterval(me.retry)
                 me.retry = null;
+                me.was_connected = true;
                 if( !me.ping) {
                     me.ping = setInterval( () => {
                       //console.log("pinging");
