@@ -31,6 +31,7 @@ the console output displays.
 * [ ] Pass a "server launched at" timestamp to the client so the client knows
       when it needs a full resync if the server restarts
       ... or simply reload the HTML on reconnection?!
+* [ ] Can we make the HTML rewriting more optional?
 
 # Done
 
