@@ -98,6 +98,8 @@ sub notify_changed( @files ) {
             my $rel = Mojo::File->new($f);
             $rel = $rel->to_rel( $dir );
             $rel =~ s!\\!/!g;
+
+            # These rules should all come from a config file, I guess
             if( $f =~ /\.html$/i ) {
                 app->log->warn("Notifying client $client_id HTML change to $rel");
                 $client->send({json => { path => $rel, type => 'reload', str => '' }});
