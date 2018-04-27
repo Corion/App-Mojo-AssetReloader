@@ -14,13 +14,38 @@ use feature 'signatures';
 no warnings 'experimental::signatures';
 GetOptions(
     'config|f=s' => \my $config_file,
+    'help'       => \my $display_help,
 ) or pod2usage(2);
+pod2usage(1) if $display_help;
 
 =head1 SYNOPSIS
 
-  mojo-assetreloader.pl _site/
+  mojo-assetreloader.pl daemon _site/
+  mojo-assetreloader.pl daemon _site/ --config=mysite.ini
+
+  Options:
+    --config config file to use
 
 =head1 OPTIONS
+
+=over 4
+
+=item B<--config>
+
+Specify a config file.
+
+=item B<--help>
+
+Print a brief help message
+
+=item B<--verbose>
+
+=back
+
+=head1 DESCRIPTION
+
+This program will serve a directory over HTTP and will notify the browser of
+changes to the files on the file system.
 
 =cut
 
