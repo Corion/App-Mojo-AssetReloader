@@ -21,7 +21,7 @@ use vars qw($reload $watcher %watched_files);
 sub watch_files(@files) {
     return unless $enabled;
     @files = map { File::Spec->rel2abs( $_, '.' ) } @files;
-    my @dirs = map {dirname($_)} @files;
+    my @dirs = map { -d $_ ? $_ : dirname($_)} @files;
     my %removed_files = %watched_files;
     delete @removed_files{ @files };
     my $other_files = grep { ! $watched_files{ $_ }} @files;
