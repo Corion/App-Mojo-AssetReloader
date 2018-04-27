@@ -1,11 +1,3 @@
-* Styling for images
-  left / center / right
-  (float: left , align:center;clear:both, float: right , 
-* CSS automagic size selection
-  center-if-(physical)-width-is-small
-* Investigate left/right column
-* Investigate what's needed for multiple posts
-  [ ] Index/list
-  [ ] Single post page
-* Show off live editing/hot reloading of static assets
+* [ ] Less profane HTML
+* Demo: Show off live editing/hot reloading of static assets
 * Demo of two differently sized browser windows side-by-side
