@@ -137,47 +137,49 @@ app->log->info("Watching things below $_")
     for @watch;
 unshift @{ app->static->paths }, @watch;
 
+my $config = [
+    { filename => qr/\.html$/,        type => 'reload' },
+    { filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
+    { filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
+    { filename => qr/\.js$/,          type => 'eval', },
+];
+
 sub notify_changed( @files ) {
     my $dir = $watch[0]; # let's hope we only have one source for files for the moment
+
+    my @actions;
+    for my $f (@files) {
+        my $rel = Mojo::File->new($f);
+        $rel = $rel->to_rel( $dir );
+        $rel =~ s!\\!/!g;
+
+        # Go through all potential actions, first one wins
+        my $found;
+        for my $candidate (@$config) {
+            if( $f =~ /$candidate->{filename}/i ) {
+                my $action = { path => $rel, %$candidate };
+
+                if( $action->{type} eq 'eval' ) {
+                    my $content = Mojo::File->new( $f );
+                    $action->{ str } = $content->slurp;
+                };
+                push @actions, $action;
+                $found++;
+                last;
+            };
+        };
+        app->log->warn("Ignoring change to $rel")
+            if not $found;
+    };
+
     for my $client_id (sort keys %pages) {
         my $client = $pages{ $client_id };
-        for my $f (@files) {
+        for my $action (@actions) {
             # Convert path to what the client will likely have requested (duh)
-            my $rel = Mojo::File->new($f);
-            $rel = $rel->to_rel( $dir );
-            $rel =~ s!\\!/!g;
 
             # These rules should all come from a config file, I guess
-            if( $f =~ /\.html$/i ) {
-                app->log->warn("Notifying client $client_id HTML change to $rel");
-                $client->send({json => { path => $rel, type => 'reload', str => '' }});
-
-            } elsif( $f =~ /\.css/i ) {
-                app->log->warn("Notifying client $client_id of CSS change to $rel");
-                #$client->send({json => { path => $rel, type => 'cssInject', str => '' }});
-                $client->send({json => { path => $rel, type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' }});
-
-            } elsif( $f =~ /\.(png|jpe?g)$/i ) {
-                app->log->warn("Notifying client $client_id of image change to $rel");
-                #$client->send({json => { path => $rel, type => 'cssInject', str => '' }});
-                $client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => 'img[src]' }});
-                # Also refetch images that were used as background via CSS:
-                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".png)"]' }});
-                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".jpg)"]' }});
-                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".jpeg)"]' }});
-
-            } elsif( $f =~ /\.js/i ) {
-                app->log->warn("Notifying client $client_id of JS change to $rel");
-                # We should check whether the Javascript passes a syntax check
-                # before reloading it, maybe
-                my $content = Mojo::File->new( $f );
-                $client->send({json => { path => $rel, type => 'eval', str => $content->slurp }});
-
-            # We should replace images by doing the same trick as cssInject, except
-            # for images
-            } else {
-                app->log->warn("Ignoring change to $rel");
-            }
+            app->log->warn("Notifying client $client_id of '$action->{type}' change to '$action->{path}'");
+            $client->send({json => $action });
         };
     };
 }
