@@ -16,7 +16,7 @@ use Filter::signatures;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
-use vars qw($reload $watcher %watched_files);
+use vars qw($reload $watcher %watched_files $watched_dirs);
 
 sub watch_files(@files) {
     return unless $enabled;
@@ -32,9 +32,9 @@ sub watch_files(@files) {
         $watcher->kill('KILL')->detach if $watcher;
     };
     @watched_files{ @files } = (1) x @files;
+    $watched_dirs = join "|", map { quotemeta $_ } grep { -d $_ } @files;
     $reload ||= Thread::Queue->new();
 
-    #status("Watching directories @dirs",1);
     $watcher = threads->create(sub(@dirs) {
         $SIG{'KILL'} = sub { threads->exit(); };
         while (1) {
@@ -59,7 +59,7 @@ sub files_changed() {
         undef @changed{ @$item };
     };
     return
-    grep { $watched_files{ $_ } }
+    grep { $watched_files{ $_ } || /^(?:$watched_dirs)\b/ }
     sort keys %changed;
 }
 
