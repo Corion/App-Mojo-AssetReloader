@@ -4,6 +4,7 @@ use Mojolicious::Lite;
 use Mojo::IOLoop;
 use Path::Class 'dir';
 use Getopt::Long;
+use Cwd;
 
 use Helper::File::ChangeNotify::Threaded;
 
@@ -13,7 +14,16 @@ no warnings 'experimental::signatures';
 GetOptions();
 
 #my ($serve) = @ARGV;
-our $serve ||= '.';
+my( $command, @watch ) = @ARGV;
+if( ! @watch ) {
+    @watch = '.';
+};
+@watch = map {
+warn $_;
+    my $r = Mojo::File->new( $_ )->to_abs(getcwd());
+    warn $r;
+    $r
+} @watch;
 
 # Inject a live reload, keep all logic on the server
 my $inject = <<'HTML';
@@ -82,15 +92,12 @@ websocket sub($c) {
 };
 
 # Have a reload timer that will check
-my $dir = dir( $serve )->absolute;
-app->log->info("Watching things below $dir");
-unshift @{ app->static->paths }, $dir;
-
-# XXX
-my @watch = glob "$dir/*";
-#warn "[[@watch]]";
+app->log->info("Watching things below $_")
+    for @watch;
+unshift @{ app->static->paths }, @watch;
 
 sub notify_changed( @files ) {
+    my $dir = $watch[0]; # let's hope we only have one source for files for the moment
     for my $client_id (sort keys %pages) {
         my $client = $pages{ $client_id };
         for my $f (@files) {
