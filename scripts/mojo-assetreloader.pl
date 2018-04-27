@@ -276,14 +276,16 @@ sub notify_changed( @files ) {
             if not $found;
     };
 
-    for my $client_id (sort keys %pages) {
-        my $client = $pages{ $client_id };
-        for my $action (@actions) {
-            # Convert path to what the client will likely have requested (duh)
+    if( @actions ) {
+        for my $client_id (sort keys %pages) {
+            my $client = $pages{ $client_id };
+            for my $action (@actions) {
+                # Convert path to what the client will likely have requested (duh)
 
-            # These rules should all come from a config file, I guess
-            app->log->warn("Notifying client $client_id of '$action->{name}' change to '$action->{path}'");
-            $client->send({json => $action });
+                # These rules should all come from a config file, I guess
+                app->log->info("Notifying client $client_id of '$action->{name}' change to '$action->{path}'");
+                $client->send({json => $action });
+            };
         };
     };
 }
