@@ -1,3 +1,0 @@
-* [ ] Less profane HTML
-* Demo: Show off live editing/hot reloading of static assets
-* Demo of two differently sized browser windows side-by-side
