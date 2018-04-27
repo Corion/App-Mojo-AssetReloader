@@ -5,6 +5,7 @@ use Mojo::IOLoop;
 use Path::Class 'dir';
 use Getopt::Long;
 use Cwd;
+use Pod::Usage;
 
 use Helper::File::ChangeNotify::Threaded;
 
@@ -13,6 +14,16 @@ use feature 'signatures';
 no warnings 'experimental::signatures';
 GetOptions(
     'config|f=s' => \my $config_file,
+) or pod2usage(2);
+
+=head1 SYNOPSIS
+
+  mojo-assetreloader.pl _site/
+
+=head1 OPTIONS
+
+=cut
+
 );
 
 sub maybe_exists( $f ) {
