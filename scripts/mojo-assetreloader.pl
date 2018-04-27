@@ -26,63 +26,76 @@ if( ! @watch ) {
 my $inject = <<'HTML';
 <!-- hot-server appends this snippit to inject code via a websock  -->
 <script>
-var ws;
 function _ws_reopen() {
     console.log("Retrying connection");
-    var retry;
-    var ping;
-    var _ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
-    _ws.onopen = () => {
-        console.log("(Re)connected");
-        clearInterval(retry)
-        retry = null;
+    var me = {
+        retry: null,
+        ping: null,
+        _ws: null,
+        open: () => {
+            me._ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
+            me._ws.onerror = (e) => {
+                if( me.ping ) {
+                    console.log("Ping stopped",e);
+                    clearInterval( me.ping );
+                    me.ping = null;
+                    };
+                if(!me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
+            };
+            me._ws.onclose = (e) => {
+                if( me.ping ) {
+                    console.log("Ping stopped",e);
+                    clearInterval( me.ping );
+                    me.ping = null;
+                    };
+                if(!me.retry) me.retry = setInterval( () => { me.open(); }, 5000 );
+            };
+            me._ws.onopen = () => {
+                console.log("(Re)connected");
+                clearInterval(me.retry)
+                me.retry = null;
+                if( !me.ping) {
+                    me.ping = setInterval( () => {
+                      console.log("pinging");
+                      try {
+                          me._ws.send( "ping" )
+                      } catch( e ) {
+                          console.log("Lost connection", e);
+                          me._ws.onerror(e);
+                      };
+                    }, 5000 );
+                };
+            };
+            me._ws.onmessage = msg => {
+            try {
+              var {path, type, selector, attr, str} = JSON.parse(msg.data)
+              } catch(e) { console.log(e) };
+              if (type == 'reload') location.reload()
+              if (type == 'jsInject') eval(str)
+              if (type == 'refetch') {
+                try {
+                Array.from(document.querySelectorAll(selector))
+                  .filter(d => d[attr].includes(path))
+                  .forEach(function( d ) {
+                      try {
+                          const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
+                          d[attr] = d[attr].replace(/\?(?:dev=.*?(?=\&|$))|$/, cacheBuster);
+                          console.log(d[attr]);
+                      } catch( e ) {
+                          console.log(e);
+                      };
+                  });
+                  } catch( e ) {
+                    console.log(e);
+                  };
+              }
+            };
+        },
     };
-    _ws.onerror = (e) => {
-        console.log(e);
-        cancelInterval( ping );
-        ping = null;
-        if(!retry) retry = setInterval( () => { ws = _ws_reopen(ws.url); }, 5000 );
-    };
-    _ws.onclose = (e) => {
-        if(!retry) retry = setInterval( () => { ws = _ws_reopen(ws.url); }, 5000 );
-    };
-    _ws.onmessage = msg => {
-    // console.log(msg.data);
-    try {
-      var {path, type, selector, attr, str} = JSON.parse(msg.data)
-      } catch(e) { console.log(e) };
-      if (type == 'reload') location.reload()
-      if (type == 'jsInject') eval(str)
-      if (type == 'refetch') {
-        try {
-        Array.from(document.querySelectorAll(selector))
-          .filter(d => d[attr].includes(path))
-          .forEach(function( d ) {
-              try {
-                  const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
-                  d[attr] = d[attr].replace(/\?(?:dev=.*?(?=\&|$))|$/, cacheBuster);
-                  console.log(d[attr]);
-              } catch( e ) {
-                  console.log(e);
-              };
-          });
-          } catch( e ) {
-            console.log(e);
-          };
-      }
-    };
-    ping = setInterval( () => {
-      console.log("pinging");
-      try {
-          _ws.send( "ping" )
-      } catch( e ) {
-          console.log("Lost connection", e);
-          _ws.onerror(e);
-      };
-    }, 5000 );
-    return _ws
+    me.open();
+    return me
 };
-ws = _ws_reopen();
+var ws = _ws_reopen();
 </script>
 HTML
 
