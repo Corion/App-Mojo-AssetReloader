@@ -238,7 +238,7 @@ unshift @{ app->static->paths }, @{ $config->{watch}};
 
 sub notify_changed( @files ) {
     my $config = app->config;
-    my $dir = $app->config->{watch}->[0]; # let's hope we only have one source for files for the moment
+    my $dir = app->config->{watch}->[0]; # let's hope we only have one source for files for the moment
 
     my @actions;
     for my $f (@files) {
