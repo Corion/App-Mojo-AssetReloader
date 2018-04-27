@@ -1,8 +1,8 @@
 # Mojo Asset Live Reloader
 
-![Demo movie of live reloading](https://github.com/Corion/App-Mojo-AssetReloader/raw/master/demo/hero-demo.mp4)
+![Demo movie of live reloading](https://github.com/Corion/App-Mojo-AssetReloader/raw/master/demo/hero-demo.gif)
 
-Written using [Mojolicious](http://mojolicious.org)
+Written using [Mojolicious](http:s//mojolicious.org)
 
 * [x] Reloads your (static) HTML
 * [x] Reloads your CSS if it changes
@@ -18,8 +18,8 @@ Written using [Mojolicious](http://mojolicious.org)
 
     mojo-assetreloader.pl daemon demo/
 
-Then visit [http://localhost:3000] or whatever other URL the console output
-displays.
+Then visit [http://localhost:3000](http://localhost:3000) or whatever other URL
+the console output displays.
 
 # To be implemented
 
