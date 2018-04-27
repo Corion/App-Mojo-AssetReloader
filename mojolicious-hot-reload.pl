@@ -86,23 +86,20 @@ my $inject = <<'HTML';
 <script>
 new WebSocket(location.origin.replace(/^http/, 'ws')).onmessage = msg => {
 // console.log(msg.data);
-  var {path, type, str} = JSON.parse(msg.data)
+try {
+  var {path, type, selector, attr, str} = JSON.parse(msg.data)
+  } catch(e) { console.log(e) };
   if (type == 'reload') location.reload()
   if (type == 'jsInject') eval(str)
-  if (type == 'cssInject') {
-  /*
-    Array.from(document.querySelectorAll('link'))
-      .filter(d => d.href.includes(path))
-      .forEach(function(d) {console.log(d.href)});
-      */
+  if (type == 'refetch') {
     try {
-    Array.from(document.querySelectorAll('link'))
-      .filter(d => d.href.includes(path))
+    Array.from(document.querySelectorAll(selector))
+      .filter(d => d[attr].includes(path))
       .forEach(function( d ) {
           try {
-          const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
-          d.href = d.href.replace(/\?.*|$/, cacheBuster);
-          console.log(d.href);
+              const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
+              d[attr] = d[attr].replace(/\?(?:dev=.*?(?=\&|$))|$/, cacheBuster);
+              console.log(d[attr]);
           } catch( e ) {
               console.log(e);
           };
@@ -169,9 +166,21 @@ sub notify_changed( @files ) {
             if( $f =~ /\.html$/i ) {
                 app->log->warn("Notifying client $client_id HTML change to $rel");
                 $client->send({json => { path => $rel, type => 'reload', str => '' }});
+
             } elsif( $f =~ /\.css/i ) {
                 app->log->warn("Notifying client $client_id of CSS change to $rel");
-                $client->send({json => { path => $rel, type => 'cssInject', str => '' }});
+                #$client->send({json => { path => $rel, type => 'cssInject', str => '' }});
+                $client->send({json => { path => $rel, type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' }});
+
+            } elsif( $f =~ /\.(png|jpe?g)$/i ) {
+                app->log->warn("Notifying client $client_id of image change to $rel");
+                #$client->send({json => { path => $rel, type => 'cssInject', str => '' }});
+                $client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => 'img[src]' }});
+                # Also refetch images that were used as background via CSS:
+                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".png)"]' }});
+                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".jpg)"]' }});
+                #$client->send({json => { path => $rel, type => 'refetch', attr => 'src', selector => '[style^="background-image:"][style*=".jpeg)"]' }});
+
             } elsif( $f =~ /\.js/i ) {
                 app->log->warn("Notifying client $client_id of JS change to $rel");
                 # We should check whether the Javascript passes a syntax check
