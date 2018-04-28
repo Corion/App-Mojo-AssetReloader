@@ -7,7 +7,9 @@ use feature 'signatures';
 no warnings 'experimental::signatures';
 
 use Cwd 'getcwd';
+use Helper::File::ChangeNotify::Threaded;
 use Mojo::File;
+use Mojo::IOLoop;
 
 our $VERSION = '0.01';
 
@@ -119,6 +121,7 @@ has 'watch'           => undef;
 has 'reload_interval' => undef;
 has 'actions'         => sub { $default_config->{actions} };
 has 'clients'         => sub { {} };
+has 'loop'            => sub { { require Mojo::IOLoop; 'Mojo::IOLoop' } };
 has 'id'              => 1;
 
 # That config loading likely will move back out to the main program again
@@ -146,7 +149,7 @@ sub restructure_config( $self, %options ) {
     if( exists $config->{watch} and not $self->watch ) {
         $self->watch( $config->{watch} );
     };
-    if( ! $self->watch ) {
+    if( ! $self->watch or (ref $self->watch eq 'ARRAY' and 0 == @{ $self->watch })) {
         $self->watch( ['.'] );
     };
     push @{ $self->watch }, $config_file
@@ -240,7 +243,7 @@ sub add_client( $self, $client ) {
 
 sub start_watching( $self, $poll_interval ) {
     Helper::File::ChangeNotify::Threaded::watch_files( @{ $self->watch } );
-    $self->reload_interval( Mojo::IOLoop->recurring($poll_interval, sub {
+    $self->reload_interval( $self->loop->recurring($poll_interval, sub {
         my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
         #app->log->debug("$_ changed") for @changed;
         $self->notify_changed(@changed) if @changed;

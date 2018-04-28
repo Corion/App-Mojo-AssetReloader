@@ -1,13 +1,12 @@
 #!perl -w
 use strict;
 use Mojolicious::Lite;
-use Mojo::IOLoop;
+use Mojo::Asset::Memory;
 use Path::Class 'dir';
 use Getopt::Long;
 use Pod::Usage;
 
 use App::Mojo::AssetReloader;
-use Helper::File::ChangeNotify::Threaded;
 
 use Filter::signatures;
 use feature 'signatures';
@@ -148,6 +147,7 @@ less complex Javascript. It can reload generated HTML instead of just static
 assets. On the downside, it can't reload changed images or CSS
 without reloading the HTML page.
 
-Reloading of assets only happens on Morbo restarts with L<Mojolicious::Plugin::AutoReload>.
+Reloading of assets only happens on Morbo restarts
+with L<Mojolicious::Plugin::AutoReload>.
 
 =cut
