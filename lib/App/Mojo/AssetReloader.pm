@@ -118,6 +118,8 @@ has 'inject_html'     => sub { $inject };
 has 'watch'           => undef;
 has 'reload_interval' => undef;
 has 'actions'         => sub { $default_config->{actions} };
+has 'clients'         => sub { {} };
+has 'id'              => 1;
 
 # That config loading likely will move back out to the main program again
 # or somewhere else...
@@ -168,6 +170,81 @@ sub restructure_config( $self, %options ) {
     };
     unshift @{ $self->actions }, @actions;
     return $self
+};
+
+sub notify_changed( $self, @files ) {
+    my $dir = $self->watch->[0]; # let's hope we only have one source for files for the moment
+
+    my @actions;
+    for my $f (@files) {
+        my $rel = Mojo::File->new($f);
+        $rel = $rel->to_rel( $dir );
+        $rel =~ s!\\!/!g;
+
+        # Go through all potential actions, first one wins
+        my $found;
+        for my $candidate (@{ $self->actions }) {
+            if( $f =~ /$candidate->{filename}/i ) {
+                my $action = { path => $rel, %$candidate };
+
+                if( $action->{type} eq 'eval' ) {
+                    my $content = Mojo::File->new( $f );
+                    $action->{ str } = $content->slurp;
+                } elsif( $action->{type} eq 'run' ) {
+                    my $cmd = $action->{command};
+                    $cmd =~ s!\$file!$f!g;
+                    system( $cmd ) == 0
+                        or warn "Couldn't launch [$cmd]: $!/$?";
+                    $found++;
+                    last;
+                };
+                push @actions, $action;
+                $found++;
+                last;
+            };
+        };
+        app->log->warn("Ignoring change to $rel")
+            if not $found;
+    };
+
+    if( @actions ) {
+        $self->notify_clients( @actions )
+    };
+}
+
+sub notify_clients( $self, @actions ) {
+    my $clients = $self->clients;
+    for my $client_id (sort keys %$clients ) {
+        my $client = $clients->{ $client_id };
+        for my $action (@actions) {
+            # Convert path to what the client will likely have requested (duh)
+
+            # These rules should all come from a config file, I guess
+            #app->log->info("Notifying client $client_id of '$action->{name}' change to '$action->{path}'");
+            $client->send({json => $action });
+        };
+    };
+}
+
+sub add_client( $self, $client ) {
+    my $id = $self->{id}++;
+    $self->clients->{ $id } = $client->tx;
+    warn "Client $id connected";
+    $client->inactivity_timeout(60);
+    $client->on(finish => sub( $c, @rest ) {
+        warn "Client $id disconnected";
+        delete $self->clients->{ $id };
+    });
+    $id;
+}
+
+sub start_watching( $self, $poll_interval ) {
+    Helper::File::ChangeNotify::Threaded::watch_files( @{ $self->watch } );
+    $self->reload_interval( Mojo::IOLoop->recurring($poll_interval, sub {
+        my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
+        #app->log->debug("$_ changed") for @changed;
+        $self->notify_changed(@changed) if @changed;
+    }));
 };
 
 1;
