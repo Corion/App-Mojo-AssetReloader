@@ -116,11 +116,13 @@ sub restructure_config( $config ) {
     } @{ $config->{watch} };
 
     $config->{actions} ||= $default_config->{actions};
+    my @actions;
     for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
         my $user_specified = $config->{$section};
         $user_specified->{name} = $section;
-        unshift @{ $config->{actions}}, $user_specified;
+        push @actions, $user_specified;
     };
+    unshift @{ $config->{actions}}, @actions;
     return $config
 };
 
