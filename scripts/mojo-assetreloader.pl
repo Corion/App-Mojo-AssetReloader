@@ -51,7 +51,9 @@ changes to the files on the file system.
 
 my( $command, @watch ) = @ARGV;
 
-my $reloader = App::Mojo::AssetReloader->new();
+my $reloader = App::Mojo::AssetReloader->new(
+    watch => \@watch,
+);
 
 $config_file ||= $reloader->find_config_file(
     name => 'assetreloader',
@@ -68,17 +70,11 @@ if( $config_file and -f $config_file ) {
     app->log->info("Loading config file '$config_file'");
 };
 
-my $config = app->config;
-
 # Overwrite directories in the config that were specified on the command line
 
-if( @watch ) {
-    $config->{watch} = \@watch;
-};
-
-$config = $reloader->restructure_config(
-    $config,
-    config_file => $config_file,
+$reloader->restructure_config(
+    config => app->config,
+    config_file_name => $config_file,
 );
 
 # Maybe this should become an "after_body" hook so we can also rewrite
@@ -91,7 +87,7 @@ hook 'after_static' => sub( $c ) {
     app->log->debug(sprintf "Rewriting HTML for '%s'", $c->req->url);
 
     # rewrite HTML to append/add our <script> tag to the end
-    my $inject = Mojo::App::AssetReloader->inject;
+    my $inject = $reloader->inject_html;
     my $res = $c->res->content->asset->slurp;
     $res =~ s!</body>!$inject</body>!i;
 
@@ -120,12 +116,12 @@ websocket sub($c) {
 
 # Have a reload timer that will check
 app->log->info("Watching things below $_")
-    for @{ $config->{watch}};
-unshift @{ app->static->paths }, @{ $config->{watch}};
+    for @{ $reloader->watch};
+unshift @{ app->static->paths }, @{ $reloader->watch };
 
 sub notify_changed( @files ) {
-    my $config = app->config;
-    my $dir = app->config->{watch}->[0]; # let's hope we only have one source for files for the moment
+    #my $config = app->config;
+    my $dir = $reloader->watch->[0]; # let's hope we only have one source for files for the moment
 
     warn "Checking $dir/Makefile";
     if( -f "$dir/Makefile") {
@@ -140,7 +136,7 @@ sub notify_changed( @files ) {
 
         # Go through all potential actions, first one wins
         my $found;
-        for my $candidate (@{ $config->{actions} }) {
+        for my $candidate (@{ $reloader->actions }) {
             if( $f =~ /$candidate->{filename}/i ) {
                 my $action = { path => $rel, %$candidate };
 
