@@ -114,8 +114,8 @@ HTML
 
 =cut
 
-has 'default_config' => sub { $default_config };
 has 'inject_html'    => sub { $inject };
+has 'actions'        => sub { $default_config->{actions} };
 
 
 sub maybe_exists( $f ) {
