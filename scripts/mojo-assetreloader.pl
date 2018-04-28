@@ -111,6 +111,8 @@ $config = App::Mojo::AssetReloader->restructure_config(
     config_file => $config_file,
 );
 
+# Maybe this should become an "after_body" hook so we can also rewrite
+# dynamic HTML replies?!
 hook 'after_static' => sub( $c ) {
     # serve everything as static
     app->log->debug(sprintf "Serving static file '%s' (%s)", $c->req->url, $c->res->headers->content_type);
