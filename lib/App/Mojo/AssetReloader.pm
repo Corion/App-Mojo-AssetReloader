@@ -114,9 +114,10 @@ HTML
 
 =cut
 
-has 'inject_html'    => sub { $inject };
-has 'watch'          => undef;
-has 'actions'        => sub { $default_config->{actions} };
+has 'inject_html'     => sub { $inject };
+has 'watch'           => undef;
+has 'reload_interval' => undef;
+has 'actions'         => sub { $default_config->{actions} };
 
 # That config loading likely will move back out to the main program again
 # or somewhere else...

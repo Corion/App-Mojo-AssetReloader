@@ -174,12 +174,16 @@ sub notify_changed( @files ) {
     };
 }
 
-Helper::File::ChangeNotify::Threaded::watch_files( @{ $reloader->watch } );
-my $reload = Mojo::IOLoop->recurring(1, sub {
-    my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
-    app->log->debug("$_ changed") for @changed;
-    notify_changed(@changed) if @changed;
-});
+sub start_watching( $reloader, $poll_interval ) {
+    Helper::File::ChangeNotify::Threaded::watch_files( @{ $reloader->watch } );
+    $reloader->reload_interval( Mojo::IOLoop->recurring($poll_interval, sub {
+        my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
+        app->log->debug("$_ changed") for @changed;
+        notify_changed(@changed) if @changed;
+    }));
+};
+
+start_watching( $reloader, 1 );
 
 app->start;
 
