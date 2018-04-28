@@ -115,9 +115,11 @@ HTML
 =cut
 
 has 'inject_html'    => sub { $inject };
+has 'watch'          => undef;
 has 'actions'        => sub { $default_config->{actions} };
 
-
+# That config loading likely will move back out to the main program again
+# or somewhere else...
 sub maybe_exists( $f ) {
     return $f
         if( $f and -f $f );
@@ -135,31 +137,36 @@ sub find_config_file( $class, %options ) {
 }
 
 # Restructure config from the INI file into our default actions
-sub restructure_config( $class, $config, %options ) {
-    my $config_file = $options{ config_file };
-    $config->{watch} ||= ['.'];
-    push @{ $config->{watch}}, $config_file
+sub restructure_config( $self, %options ) {
+    my $config = $options{ config };
+    my $config_file = $options{ config_file_name };
+    if( exists $config->{watch} and not $self->watch ) {
+        $self->watch( $config->{watch} );
+    };
+    if( ! $self->watch ) {
+        $self->watch( ['.'] );
+    };
+    push @{ $self->watch }, $config_file
         if ($config_file and -f $config_file);
 
     # Convert from hash to array if necessary
-    if( 'HASH' eq ref $config->{watch}) {
-        $config->{watch} = [ sort keys %{ $config->watch } ];
+    if( 'HASH' eq ref $self->watch) {
+        $self->watch = [ sort keys %{ $self->watch } ];
     };
 
     my $cwd = getcwd();
-    @{ $config->{watch} } = map {
+    @{ $self->watch } = map {
         Mojo::File->new( $_ )->to_abs($cwd)
-    } @{ $config->{watch} };
+    } @{ $self->watch };
 
-    $config->{actions} ||= $class->default_config->{actions};
     my @actions;
     for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
         my $user_specified = $config->{$section};
         $user_specified->{name} = $section;
         push @actions, $user_specified;
     };
-    unshift @{ $config->{actions}}, @actions;
-    return $config
+    unshift @{ $self->actions }, @actions;
+    return $self
 };
 
 1;
