@@ -51,7 +51,9 @@ changes to the files on the file system.
 
 my( $command, @watch ) = @ARGV;
 
-$config_file ||= App::Mojo::AssetReloader->find_config_file(
+my $reloader = App::Mojo::AssetReloader->new();
+
+$config_file ||= $reloader->find_config_file(
     name => 'assetreloader',
     dirs => [@watch, '.', $ENV{HOME}, $ENV{USERPROFILE}],
     global => '/etc/assetreloader'
@@ -74,7 +76,7 @@ if( @watch ) {
     $config->{watch} = \@watch;
 };
 
-$config = App::Mojo::AssetReloader->restructure_config(
+$config = $reloader->restructure_config(
     $config,
     config_file => $config_file,
 );
