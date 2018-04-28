@@ -4,7 +4,6 @@ use Mojolicious::Lite;
 use Mojo::IOLoop;
 use Path::Class 'dir';
 use Getopt::Long;
-use Cwd;
 use Pod::Usage;
 
 use App::Mojo::AssetReloader;
@@ -75,36 +74,10 @@ if( @watch ) {
     $config->{watch} = \@watch;
 };
 
-$config = restructure_config( $config );
-
-# Restructure config from the INI file into our default actions
-sub restructure_config( $config ) {
-    $config->{watch} ||= ['.'];
-    push @{ $config->{watch}}, $config_file
-        if ($config_file and -f $config_file);
-
-    # Convert from hash to array if necessary
-    if( 'HASH' eq ref $config->{watch}) {
-        $config->{watch} = [ sort keys %{ $config->watch } ];
-    };
-
-    my $cwd = getcwd();
-    @{ $config->{watch} } = map {
-        Mojo::File->new( $_ )->to_abs($cwd)
-    } @{ $config->{watch} };
-
-    $config->{actions} ||= App::Mojo::AssetReloader->default_config->{actions};
-    my @actions;
-    for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
-        my $user_specified = $config->{$section};
-        $user_specified->{name} = $section;
-        push @actions, $user_specified;
-    };
-    unshift @{ $config->{actions}}, @actions;
-    return $config
-};
-
 $config = App::Mojo::AssetReloader->restructure_config(
+    $config,
+    config_file => $config_file,
+);
 
 hook 'after_static' => sub( $c ) {
     # serve everything as static
