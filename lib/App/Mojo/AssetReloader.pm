@@ -123,6 +123,7 @@ has 'actions'         => sub { $default_config->{actions} };
 has 'clients'         => sub { {} };
 has 'loop'            => sub { { require Mojo::IOLoop; 'Mojo::IOLoop' } };
 has 'id'              => 1;
+has 'app'             => undef;
 
 # That config loading likely will move back out to the main program again
 # or somewhere else...
