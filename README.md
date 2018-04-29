@@ -27,15 +27,15 @@ the console output displays.
 * [ ] Demo of two differently sized browser windows side-by-side
 * [ ] Move hot-reloaded Javascript to a separate file
 * [ ] Watch hot-reloaded Javascript
-* [ ] Allow specifying your own Javascript to include
 * [ ] Pass a "server launched at" timestamp to the client so the client knows
       when it needs a full resync if the server restarts
-      ... or simply reload the HTML on reconnection?!
+      ... or simply reload the HTML/page on reconnection?!
 * [ ] Can we make the HTML rewriting more optional?
-* [ ] Implement a tag for JS insertion so we can also reload the page when
-      the templates get rewritten, like Mojolicious::Plugin::AutoReload does.
 
 # Done
 
 * [x] Read methods from a config file
 * [x] Add `run` action to configuration to (re)launch `make` or `jekyll`
+* [x] Allow specifying your own Javascript to include
+* [x] Implement a tag for JS insertion so we can also reload the page when
+      the templates get rewritten, like Mojolicious::Plugin::AutoReload does.
