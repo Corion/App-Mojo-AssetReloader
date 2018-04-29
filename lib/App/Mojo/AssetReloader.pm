@@ -1,6 +1,9 @@
 package App::Mojo::AssetReloader;
 use strict;
-use Mojo::Base -base;
+#use Mojo::Base -base;
+use Mojo::Base 'Mojolicious::Plugin';
+#use Mojo::IOLoop;
+use Mojo::Util qw( unindent trim );
 
 use Filter::signatures;
 use feature 'signatures';
@@ -203,12 +206,13 @@ sub notify_changed( $self, @files ) {
                     $found++;
                     last;
                 };
+                $self->app->log->info(sprintf "'%s' on '%s'", $action->{type}, $action->{path});
                 push @actions, $action;
                 $found++;
                 last;
             };
         };
-        app->log->warn("Ignoring change to $rel")
+        $self->app->log->warn("Ignoring change to $rel")
             if not $found;
     };
 
@@ -230,6 +234,30 @@ sub notify_clients( $self, @actions ) {
         };
     };
 }
+
+sub register( $self, $app, $config ) {
+    $self->app( $app );
+    $self->restructure_config( config => $config );
+    $self->app->renderer->cache( Mojo::Cache->new(max_keys => 0)); # we want live changes
+
+    $app->routes->websocket( sub($c) {
+        my $client_id = $self->add_client( $c );
+        $app->log->warn("Client $client_id connected");
+    });
+
+    $app->helper( auto_reload => sub {
+        my ( $c ) = @_;
+        #if ( $app->mode eq 'development' ) {
+            return $c->render_to_string( inline => unindent trim( $self->inject_html ) );
+        #}
+        #return '';
+    } );
+
+    unshift @{ $app->static->paths || [] }, @{ $self->watch };
+    unshift @{ $app->renderer->paths || [] }, @{ $self->watch };
+    $self->start_watching( 1 ); # XXX read interval from config
+};
+
 
 sub add_client( $self, $client ) {
     my $id = $self->{id}++;
