@@ -22,6 +22,7 @@ App::Mojo::AssetReloader - automatically reload static assets
 our $default_config = {
     actions => [
         { name => 'HTML',  filename => qr/\.html$/,        type => 'reload' },
+        { name => 'HTML-template',  filename => qr/(\.html\.ep|\.tmpl)$/,        type => 'reload' },
         { name => 'CSS',   filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
         { name => 'image', filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
         { name => 'JS',    filename => qr/\.js$/,          type => 'eval', },
