@@ -222,6 +222,10 @@ sub notify_changed( $self, @files ) {
 }
 
 sub notify_clients( $self, @actions ) {
+    # Blow the cache away
+    my $old_cache = $self->app->renderer->cache;
+    $self->app->renderer->cache( Mojo::Cache->new(max_keys => $old_cache->max_keys));
+
     my $clients = $self->clients;
     for my $client_id (sort keys %$clients ) {
         my $client = $clients->{ $client_id };
@@ -238,7 +242,6 @@ sub notify_clients( $self, @actions ) {
 sub register( $self, $app, $config ) {
     $self->app( $app );
     $self->restructure_config( config => $config );
-    $self->app->renderer->cache( Mojo::Cache->new(max_keys => 0)); # we want live changes
 
     $app->routes->websocket( sub($c) {
         my $client_id = $self->add_client( $c );
