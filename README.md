@@ -32,6 +32,8 @@ the console output displays.
       when it needs a full resync if the server restarts
       ... or simply reload the HTML on reconnection?!
 * [ ] Can we make the HTML rewriting more optional?
+* [ ] Implement a tag for JS insertion so we can also reload the page when
+      the templates get rewritten, like Mojolicious::Plugin::AutoReload does.
 
 # Done
 
