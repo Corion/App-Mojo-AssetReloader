@@ -20,6 +20,12 @@ our $VERSION = '0.01';
 
 App::Mojo::AssetReloader - automatically reload static assets
 
+=head1 SYNOPSIS
+
+    plugin 'AssetReloader' => {
+        watch => ['templates'],
+    };
+
 =cut
 
 our $default_config = {
