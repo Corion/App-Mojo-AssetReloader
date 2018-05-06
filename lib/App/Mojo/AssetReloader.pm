@@ -228,6 +228,16 @@ sub notify_changed( $self, @files ) {
     };
 }
 
+=head2 C<< $plugin->notify_clients >>
+
+  $plugin->notify_clients( {
+      type => 'reload',
+  });
+
+Notify all connected clients that they should perform actions.
+
+=cut
+
 sub notify_clients( $self, @actions ) {
     # Blow the cache away
     my $old_cache = $self->app->renderer->cache;
