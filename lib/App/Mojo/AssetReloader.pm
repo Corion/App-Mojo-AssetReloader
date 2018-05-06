@@ -145,6 +145,7 @@ sub maybe_exists( $f ) {
         if( $f and -f "$f.ini" );
 }
 
+# This should go back to the app, maybe?!
 sub find_config_file( $class, %options ) {
     my $config_name = $options{ name };
     my ($config_file) = grep { defined $_ }
@@ -258,7 +259,7 @@ sub notify_clients( $self, @actions ) {
 
 sub register( $self, $app, $config ) {
     $self->app( $app );
-    $self->restructure_config( config => $config );
+    $config = $self->restructure_config( config => $config );
 
     $app->routes->websocket( sub($c) {
         my $client_id = $self->add_client( $c );
@@ -282,10 +283,8 @@ sub register( $self, $app, $config ) {
 sub add_client( $self, $client ) {
     my $id = $self->{id}++;
     $self->clients->{ $id } = $client->tx;
-    warn "Client $id connected";
     $client->inactivity_timeout(60);
     $client->on(finish => sub( $c, @rest ) {
-        warn "Client $id disconnected";
         delete $self->clients->{ $id };
     });
     $id;
