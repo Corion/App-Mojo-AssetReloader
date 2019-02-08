@@ -238,7 +238,12 @@ app->log->info("Watching things below $_")
 unshift @{ app->static->paths }, @watch;
 
 sub notify_changed( @files ) {
-    my $dir = $watch[0]; # let's hope we only have one source for files for the moment
+    my($dir) = grep { -d $_ } @watch; # let's hope we only have one source for files for the moment
+
+    warn "Checking $dir/Makefile";
+    if( -f "$dir/Makefile") {
+        system qq(gmake -f "$dir/Makefile");
+    }
 
     my @actions;
     for my $f (@files) {
