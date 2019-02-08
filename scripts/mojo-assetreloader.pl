@@ -56,6 +56,7 @@ my $default_config = {
         { name => 'CSS',   filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
         { name => 'image', filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
         { name => 'JS',    filename => qr/\.js$/,          type => 'eval', },
+        # we should know when to reconfigure our server ...
     ]
 };
 
