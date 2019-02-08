@@ -120,7 +120,7 @@ sub restructure_config( $config ) {
 
 # Inject a live reload, keep all logic on the server
 my $inject = <<'HTML';
-<!-- hot-server appends this snippit to inject code via a websock  -->
+<!-- hot-server appends this snippet to inject code via a websocket  -->
 <script>
 function _ws_reopen() {
     //console.log("Retrying connection");
