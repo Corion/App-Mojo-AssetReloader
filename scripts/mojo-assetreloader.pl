@@ -7,6 +7,7 @@ use Getopt::Long;
 use Cwd;
 use Pod::Usage;
 
+use App::Mojo::AssetReloader;
 use Helper::File::ChangeNotify::Threaded;
 
 use Filter::signatures;
@@ -50,36 +51,18 @@ changes to the files on the file system.
 =cut
 
 my( $command, @watch ) = @ARGV;
-my $default_config = {
-    actions => [
-        { name => 'HTML',  filename => qr/\.html$/,        type => 'reload' },
-        { name => 'CSS',   filename => qr/\.css$/,         type => 'refetch', attr => 'href', selector => 'link[rel="stylesheet"]' },
-        { name => 'image', filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
-        { name => 'JS',    filename => qr/\.js$/,          type => 'eval', },
-        # we should know when to reconfigure our server ...
-        { name => 'POD',    filename => qr/\.pod$/,        type => 'run', command => 'gmake'},
-    ]
-};
 
-sub maybe_exists( $f ) {
-    return $f
-        if( $f and -f $f );
-    return "$f.ini"
-        if( $f and -f "$f.ini" );
-}
-
-if( !$config_file ) {
-    my $config_name = '.assetreloader';
-    ($config_file) = grep { defined $_ }
-                     map { maybe_exists "$_/$config_name" }
-                     grep { defined $_ && length $_ }
-                     (@watch, '.', $ENV{HOME});
-    $config_file ||= maybe_exists '/etc/assetreloader';
-};
+$config_file ||= App::Mojo::AssetReloader->find_config_file(
+    name => 'assetreloader',
+    dirs => [@watch, '.', $ENV{HOME}, $ENV{USERPROFILE}],
+    global => '/etc/assetreloader'
+);
 
 if( $config_file and -f $config_file ) {
     # Read the config
     $config_file = Mojo::File->new( $config_file )->to_abs;
+    # Hmm - this overwrites the whole app config, thus preventing reuse within
+    # a larger application?!
     app->plugin('INIConfig' => { file => $config_file });
     app->log->info("Loading config file '$config_file'");
 };
@@ -115,7 +98,7 @@ sub restructure_config( $config ) {
         Mojo::File->new( $_ )->to_abs($cwd)
     } @{ $config->{watch} };
 
-    $config->{actions} ||= $default_config->{actions};
+    $config->{actions} ||= App::Mojo::AssetReloader->default_config->{actions};
     my @actions;
     for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
         my $user_specified = $config->{$section};
