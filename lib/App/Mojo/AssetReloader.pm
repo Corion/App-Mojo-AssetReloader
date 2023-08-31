@@ -1,5 +1,7 @@
 package App::Mojo::AssetReloader;
 use strict;
+use Mojo::Base -base;
+
 use Filter::signatures;
 use feature 'signatures';
 no warnings 'experimental::signatures';
@@ -105,6 +107,17 @@ var ws = _ws_reopen();
 </script>
 HTML
 
+=head1 SYNOPSIS
+
+  my $app = App::Mojo::AssetReloader->new();
+  $app->load_config();
+
+=cut
+
+has 'default_config' => sub { $default_config };
+has 'inject_html'    => sub { $inject };
+
+
 sub maybe_exists( $f ) {
     return $f
         if( $f and -f $f );
@@ -119,14 +132,6 @@ sub find_config_file( $class, %options ) {
                         grep { defined $_ && length $_ }
                         (@{ $options{ dirs }});
     $config_file ||= maybe_exists $options{ global };
-}
-
-sub default_config( $class ) {
-    $default_config
-}
-
-sub inject( $class ) {
-    $inject
 }
 
 # Restructure config from the INI file into our default actions

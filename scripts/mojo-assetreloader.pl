@@ -51,7 +51,9 @@ changes to the files on the file system.
 
 my( $command, @watch ) = @ARGV;
 
-$config_file ||= App::Mojo::AssetReloader->find_config_file(
+my $reloader = App::Mojo::AssetReloader->new();
+
+$config_file ||= $reloader->find_config_file(
     name => 'assetreloader',
     dirs => [@watch, '.', $ENV{HOME}, $ENV{USERPROFILE}],
     global => '/etc/assetreloader'
@@ -74,40 +76,8 @@ if( @watch ) {
     $config->{watch} = \@watch;
 };
 
-# Restructure config from the INI file into our default actions
-sub restructure_config( $config ) {
-    $config->{watch} ||= ['.'];
-    if( ! ref $config->{watch}) {
-        $config->{watch} = [$config->{watch}];
-    } elsif( 'HASH' eq ref $config->{watch}) {
-        $config->{watch} = [values %{$config->{watch}}];
-    };
-    push @{ $config->{watch}}, $config_file
-        if ($config_file and -f $config_file);
-
-    # Convert from hash to array if necessary
-    if( 'HASH' eq ref $config->{watch}) {
-        $config->{watch} = [ sort keys %{ $config->watch } ];
-    };
-
-    my $cwd = getcwd();
-    @{ $config->{watch} } = map {
-        Mojo::File->new( $_ )->to_abs($cwd)
-    } @{ $config->{watch} };
-
-    $config->{actions} ||= App::Mojo::AssetReloader->default_config->{actions};
-    my @actions;
-    for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
-        my $user_specified = $config->{$section};
-        $user_specified->{name} = $section;
-        push @actions, $user_specified;
-    };
-    unshift @{ $config->{actions}}, @actions;
-    return $config
-};
-
-$config = App::Mojo::AssetReloader->restructure_config(
-    $config
+$config = $reloader->restructure_config(
+    $config,
     config_file => $config_file,
 );
 
