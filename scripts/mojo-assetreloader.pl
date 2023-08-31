@@ -239,11 +239,12 @@ websocket sub($c) {
 
 # Have a reload timer that will check
 app->log->info("Watching things below $_")
-    for @watch;
-unshift @{ app->static->paths }, @watch;
+    for @{ $config->{watch}};
+unshift @{ app->static->paths }, @{ $config->{watch}};
 
 sub notify_changed( @files ) {
-    my($dir) = grep { -d $_ } @watch; # let's hope we only have one source for files for the moment
+    my $config = app->config;
+    my $dir = $app->config->{watch}->[0]; # let's hope we only have one source for files for the moment
 
     warn "Checking $dir/Makefile";
     if( -f "$dir/Makefile") {
@@ -258,7 +259,6 @@ sub notify_changed( @files ) {
 
         # Go through all potential actions, first one wins
         my $found;
-        my $config = app->config;
         for my $candidate (@{ $config->{actions} }) {
             if( $f =~ /$candidate->{filename}/i ) {
                 my $action = { path => $rel, %$candidate };
