@@ -4,6 +4,9 @@ use Filter::signatures;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
+use Cwd 'getcwd';
+use Mojo::File;
+
 our $VERSION = '0.01';
 
 =head1 NAME
@@ -125,6 +128,34 @@ sub default_config( $class ) {
 sub inject( $class ) {
     $inject
 }
+
+# Restructure config from the INI file into our default actions
+sub restructure_config( $class, $config, %options ) {
+    my $config_file = $options{ config_file };
+    $config->{watch} ||= ['.'];
+    push @{ $config->{watch}}, $config_file
+        if ($config_file and -f $config_file);
+
+    # Convert from hash to array if necessary
+    if( 'HASH' eq ref $config->{watch}) {
+        $config->{watch} = [ sort keys %{ $config->watch } ];
+    };
+
+    my $cwd = getcwd();
+    @{ $config->{watch} } = map {
+        Mojo::File->new( $_ )->to_abs($cwd)
+    } @{ $config->{watch} };
+
+    $config->{actions} ||= $class->default_config->{actions};
+    my @actions;
+    for my $section ( grep { $_ ne 'watch' and $_ ne 'actions' } keys %$config ) {
+        my $user_specified = $config->{$section};
+        $user_specified->{name} = $section;
+        push @actions, $user_specified;
+    };
+    unshift @{ $config->{actions}}, @actions;
+    return $config
+};
 
 1;
 

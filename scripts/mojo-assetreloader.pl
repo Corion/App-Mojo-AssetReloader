@@ -4,7 +4,6 @@ use Mojolicious::Lite;
 use Mojo::IOLoop;
 use Path::Class 'dir';
 use Getopt::Long;
-use Cwd;
 use Pod::Usage;
 
 use App::Mojo::AssetReloader;
@@ -75,10 +74,6 @@ if( @watch ) {
     $config->{watch} = \@watch;
 };
 
-$config = App::Mojo::AssetReloader->restructure_config(
-    $config
-);
-
 # Restructure config from the INI file into our default actions
 sub restructure_config( $config ) {
     $config->{watch} ||= ['.'];
@@ -111,6 +106,10 @@ sub restructure_config( $config ) {
     return $config
 };
 
+$config = App::Mojo::AssetReloader->restructure_config(
+    $config
+    config_file => $config_file,
+);
 
 hook 'after_static' => sub( $c ) {
     # serve everything as static
