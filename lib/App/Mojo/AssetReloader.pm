@@ -214,7 +214,15 @@ sub notify_changed( $self, @files ) {
                     $found++;
                     last;
                 };
-                $self->app->log->info(sprintf "'%s' on '%s'", $action->{type}, $action->{path});
+                my $app = $self->app;
+                if( $app ) {
+                    my $log = $app->log;
+                    if( $log ) {
+                        $log->info(sprintf "'%s' on '%s'", $action->{type}, $action->{path});
+                    };
+                } else {
+                    warn sprintf "'%s' on '%s'", $action->{type}, $action->{path}
+                };
                 push @actions, $action;
                 $found++;
                 last;
@@ -241,8 +249,10 @@ Notify all connected clients that they should perform actions.
 
 sub notify_clients( $self, @actions ) {
     # Blow the cache away
-    my $old_cache = $self->app->renderer->cache;
-    $self->app->renderer->cache( Mojo::Cache->new(max_keys => $old_cache->max_keys));
+    if( $self->app ) {
+        my $old_cache = $self->app->renderer->cache;
+        $self->app->renderer->cache( Mojo::Cache->new(max_keys => $old_cache->max_keys));
+    };
 
     my $clients = $self->clients;
     for my $client_id (sort keys %$clients ) {
