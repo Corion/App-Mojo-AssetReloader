@@ -22,6 +22,86 @@ our $default_config = {
     ]
 };
 
+# Inject a live reload, keep all logic on the server
+our $inject = <<'HTML';
+<!-- hot-server appends this snippit to inject code via a websocket  -->
+<script>
+function _ws_reopen() {
+    //console.log("Retrying connection");
+    var me = {
+        retry: null,
+        ping: null,
+        was_connected: null,
+        _ws: null,
+        reconnect: () => {
+            if( me.ping ) {
+                clearInterval( me.ping );
+                me.ping = null;
+            };
+            me._ws = null;
+            if(!me.retry) {
+                me.retry = setTimeout( () => { try { me.open(); } catch( e ) { console.log("Whoa" )} }, 5000 );
+            };
+        },
+        open: () => {
+            me.retry = null;
+            me._ws = new WebSocket(location.origin.replace(/^http/, 'ws'));
+            me._ws.addEventListener('close', (e) => {
+                me.reconnect();
+            });
+            me._ws.addEventListener('error', (e) => {
+                me.reconnect();
+            });
+            me._ws.addEventListener('open', () => {
+                if( me.retry ) {
+                    clearInterval(me.retry)
+                    me.retry = null;
+                };
+                me.was_connected = true;
+                if( !me.ping) {
+                    me.ping = setInterval( () => {
+                      try {
+                          me._ws.send( "ping" )
+                      } catch( e ) {
+                          //console.log("Lost connection", e);
+                          me._ws.onerror(e);
+                      };
+                    }, 5000 );
+                };
+            });
+            me._ws.addEventListener('message', (msg) => {
+            try {
+              var {path, type, selector, attr, str} = JSON.parse(msg.data)
+              } catch(e) { console.log(e) };
+              if (type == 'reload') location.reload()
+              if (type == 'jsInject') eval(str)
+              if (type == 'refetch') {
+                try {
+                Array.from(document.querySelectorAll(selector))
+                  .filter(d => d[attr].includes(path))
+                  .forEach(function( d ) {
+                      try {
+                          const cacheBuster = '?dev=' + Math.floor(Math.random() * 100); // Justin Case, cache buster
+                          d[attr] = d[attr].replace(/\?(?:dev=.*?(?=\&|$))|$/, cacheBuster);
+                          console.log(d[attr]);
+                      } catch( e ) {
+                          console.log(e);
+                      };
+                  });
+                  } catch( e ) {
+                    console.log(e);
+                  };
+              }
+            });
+        },
+    };
+    me.open();
+    return me
+};
+var ws = _ws_reopen();
+</script>
+HTML
+
 sub maybe_exists( $f ) {
     return $f
         if( $f and -f $f );
@@ -40,6 +120,10 @@ sub find_config_file( $class, %options ) {
 
 sub default_config( $class ) {
     $default_config
+}
+
+sub inject( $class ) {
+    $inject
 }
 
 1;
