@@ -102,7 +102,7 @@ sub restructure_config( $config ) {
     } elsif( 'HASH' eq ref $config->{watch}) {
         $config->{watch} = [values %{$config->{watch}}];
     };
-    unshift @{ $config->{watch}}, $config_file
+    push @{ $config->{watch}}, $config_file
         if ($config_file and -f $config_file);
 
     # Convert from hash to array if necessary
