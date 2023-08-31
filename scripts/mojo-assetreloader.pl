@@ -342,4 +342,6 @@ less complex Javascript. It can reload generated HTML instead of just static
 assets. On the downside, it can't reload changed images or CSS
 without reloading the HTML page.
 
+Reloading of assets only happens on Morbo restarts with L<Mojolicious::Plugin::AutoReload>.
+
 =cut
