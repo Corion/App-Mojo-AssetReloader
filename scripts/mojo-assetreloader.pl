@@ -101,17 +101,9 @@ hook 'after_static' => sub( $c ) {
     $res
 };
 
-our %pages;
-our $id = 0;
 websocket sub($c) {
-    my $client_id = $id++;
-    $pages{ $client_id } = $c->tx;
-    $c->inactivity_timeout(60);
+    my $client_id = $reloader->add_client( $c );
     app->log->warn("Client $client_id connected");
-    $c->on(finish => sub( $c, @rest ) {
-        app->log->warn("Client $client_id disconnected");
-        delete $pages{ $client_id };
-    });
 };
 
 # Have a reload timer that will check
@@ -119,71 +111,7 @@ app->log->info("Watching things below $_")
     for @{ $reloader->watch};
 unshift @{ app->static->paths }, @{ $reloader->watch };
 
-sub notify_changed( @files ) {
-    #my $config = app->config;
-    my $dir = $reloader->watch->[0]; # let's hope we only have one source for files for the moment
-
-    warn "Checking $dir/Makefile";
-    if( -f "$dir/Makefile") {
-        system qq(gmake -f "$dir/Makefile");
-    }
-
-    my @actions;
-    for my $f (@files) {
-        my $rel = Mojo::File->new($f);
-        $rel = $rel->to_rel( $dir );
-        $rel =~ s!\\!/!g;
-
-        # Go through all potential actions, first one wins
-        my $found;
-        for my $candidate (@{ $reloader->actions }) {
-            if( $f =~ /$candidate->{filename}/i ) {
-                my $action = { path => $rel, %$candidate };
-
-                if( $action->{type} eq 'eval' ) {
-                    my $content = Mojo::File->new( $f );
-                    $action->{ str } = $content->slurp;
-                } elsif( $action->{type} eq 'run' ) {
-                    my $cmd = $action->{command};
-                    $cmd =~ s!\$file!$f!g;
-                    system( $cmd ) == 0
-                        or warn "Couldn't launch [$cmd]: $!/$?";
-                    $found++;
-                    last;
-                };
-                push @actions, $action;
-                $found++;
-                last;
-            };
-        };
-        app->log->warn("Ignoring change to $rel")
-            if not $found;
-    };
-
-    if( @actions ) {
-        for my $client_id (sort keys %pages) {
-            my $client = $pages{ $client_id };
-            for my $action (@actions) {
-                # Convert path to what the client will likely have requested (duh)
-
-                # These rules should all come from a config file, I guess
-                app->log->info("Notifying client $client_id of '$action->{name}' change to '$action->{path}'");
-                $client->send({json => $action });
-            };
-        };
-    };
-}
-
-sub start_watching( $reloader, $poll_interval ) {
-    Helper::File::ChangeNotify::Threaded::watch_files( @{ $reloader->watch } );
-    $reloader->reload_interval( Mojo::IOLoop->recurring($poll_interval, sub {
-        my @changed = Helper::File::ChangeNotify::Threaded::files_changed();
-        app->log->debug("$_ changed") for @changed;
-        notify_changed(@changed) if @changed;
-    }));
-};
-
-start_watching( $reloader, 1 );
+$reloader->start_watching( 1 );
 
 app->start;
 
