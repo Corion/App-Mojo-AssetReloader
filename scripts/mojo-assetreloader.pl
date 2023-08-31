@@ -57,6 +57,7 @@ my $default_config = {
         { name => 'image', filename => qr/\.(png|jpe?g)$/, type => 'refetch', attr => 'src', selector => 'img[src]' },
         { name => 'JS',    filename => qr/\.js$/,          type => 'eval', },
         # we should know when to reconfigure our server ...
+        { name => 'POD',    filename => qr/\.pod$/,        type => 'run', command => 'gmake'},
     ]
 };
 
@@ -266,6 +267,13 @@ sub notify_changed( @files ) {
                 if( $action->{type} eq 'eval' ) {
                     my $content = Mojo::File->new( $f );
                     $action->{ str } = $content->slurp;
+                } elsif( $action->{type} eq 'run' ) {
+                    my $cmd = $action->{command};
+                    $cmd =~ s!\$file!$f!g;
+                    system( $cmd ) == 0
+                        or warn "Couldn't launch [$cmd]: $!/$?";
+                    $found++;
+                    last;
                 };
                 push @actions, $action;
                 $found++;
@@ -307,6 +315,9 @@ app->start;
     [HTML]
     filename=.html$
     type=reload
+    [Template]
+    filename=\.tmpl$
+    run=make
     [CSS]
     filename=\.css$
     type=refetch
