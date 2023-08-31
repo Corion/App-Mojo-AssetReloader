@@ -112,6 +112,7 @@ unshift @{ app->static->paths }, @{ $reloader->watch };
 
 $reloader->start_watching( 1 );
 
+@ARGV=(daemon => '-l', 'http://*:5001');
 app->start;
 
 =head1 CONFIG
